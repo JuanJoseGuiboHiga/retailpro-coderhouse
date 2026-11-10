@@ -270,9 +270,8 @@ retailpro-coderhouse/
 │   ├── 02_m4_consultas_negocio.sql     # Consultas de negocio (Módulo 4)
 │   └── 03_m5_consultas_join_union.sql  # Consultas JOIN y UNION (Módulo 5)
 ├── powerbi/
-│   └── RetailPro.pbix                  # Reporte y modelo semántico (medidas DAX)
-├── docs/
-│   └── modelo_er.png                   # Diagrama entidad-relación
+│   ├── GuiboHiga_JuanJose_Checkpoint2.pbix  # ETL en Power Query (M) y preparación del modelo
+│   └── Pipeline_ETL_GuiboHiga_JuanJose.pbix  # Reporte final, medidas DAX y tableros
 ├── .gitignore
 ├── LICENSE
 └── README.md
