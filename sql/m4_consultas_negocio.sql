@@ -1,52 +1,77 @@
 -- Consulta 1 — Resumen ejecutivo mensual
 SELECT 
-    EXTRACT(MONTH FROM fecha_venta) AS mes,
-    SUM(cantidad * precio_unitario) AS total_facturado,
-    COUNT(*) AS cantidad_pedidos,
-    AVG(cantidad * precio_unitario) AS ticket_promedio
-FROM ventas
-GROUP BY EXTRACT(MONTH FROM fecha_venta)
+    EXTRACT(MONTH FROM v.fecha_venta) AS mes,
+    SUM(v.cantidad * p.precio) AS total_facturado,
+    COUNT(v.id_venta) AS cantidad_pedidos,
+    ROUND(AVG(v.cantidad * p.precio), 2) AS ticket_promedio
+FROM ventas AS v
+INNER JOIN productos AS p 
+    ON v.id_producto = p.id_producto
+GROUP BY EXTRACT(MONTH FROM v.fecha_venta)
 ORDER BY mes;
+
 
 -- Consulta 2 — Ranking de productos
 SELECT 
-    id_producto, 
-    SUM(cantidad * precio_unitario) AS total_generado, 
-    SUM(cantidad) AS unidades_vendidas 
-FROM ventas 
-GROUP BY id_producto 
+    p.id_producto,
+    p.nombre_producto,
+    SUM(v.cantidad * p.precio) AS total_generado, 
+    SUM(v.cantidad) AS unidades_vendidas 
+FROM ventas AS v
+INNER JOIN productos AS p 
+    ON v.id_producto = p.id_producto
+GROUP BY p.id_producto, p.nombre_producto
 ORDER BY total_generado DESC 
 LIMIT 5;
 
 -- Consulta 3 — Clientes recurrentes
 SELECT 
-    id_cliente, 
-    COUNT(*) AS cantidad_pedidos, 
-    SUM(cantidad * precio_unitario) AS total_gastado 
-FROM ventas  
-GROUP BY id_cliente 
-HAVING COUNT(*) > 1 
-ORDER BY total_gastado DESC;
+    c.id_cliente,
+    c.nombre AS nombre_cliente,
+    COUNT(v.id_venta) AS cantidad_pedidos,
+    SUM(v.cantidad * p.precio) AS total_gastado
+FROM ventas AS v
+INNER JOIN clientes AS c 
+    ON v.id_cliente = c.id_cliente
+INNER JOIN productos AS p 
+    ON v.id_producto = p.id_producto
+GROUP BY 
+    c.id_cliente, 
+    c.nombre
+HAVING 
+    COUNT(v.id_venta) > 1
+ORDER BY 
+    total_gastado DESC;
 
 -- Consulta 4 — Meses por encima/por debajo del promedio
 WITH ventas_mensuales AS (
     SELECT 
-        EXTRACT(MONTH FROM fecha_venta) AS mes,
-        SUM(cantidad * precio_unitario) AS total_facturado
-    FROM ventas
-    GROUP BY EXTRACT(MONTH FROM fecha_venta)
+        EXTRACT(YEAR FROM v.fecha_venta)::INT AS anio,
+        EXTRACT(MONTH FROM v.fecha_venta)::INT AS mes,
+        TO_CHAR(v.fecha_venta, 'TMMonth YYYY') AS periodo,
+        SUM(v.cantidad * p.precio) AS total_facturado
+    FROM ventas AS v
+    INNER JOIN productos AS p 
+        ON v.id_producto = p.id_producto
+    GROUP BY 
+        EXTRACT(YEAR FROM v.fecha_venta),
+        EXTRACT(MONTH FROM v.fecha_venta),
+        TO_CHAR(v.fecha_venta, 'TMMonth YYYY')
 )
 SELECT 
+    anio,
     mes,
+    periodo,
     total_facturado,
     CASE 
         WHEN total_facturado > (SELECT AVG(total_facturado) FROM ventas_mensuales) THEN 'Por encima'
         WHEN total_facturado < (SELECT AVG(total_facturado) FROM ventas_mensuales) THEN 'Por debajo'
         ELSE 'Igual'
-    END AS promedio_mensual
+    END AS comparacion_promedio
 FROM ventas_mensuales
-ORDER BY mes;
-
+ORDER BY 
+    anio, 
+    mes;
 -- ==========================================
 -- BLOQUE DE CIERRE: HALLAZGOS DE NEGOCIO
 -- ==========================================
